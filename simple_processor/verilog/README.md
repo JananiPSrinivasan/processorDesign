@@ -9,10 +9,9 @@ The processor executes a small, hardcoded program stored in instruction memory (
 We implement the following forward-pass model:
 
 ### Forward Pass:
-\[
+```math
 y = \text{step}(x_1 \cdot w_1 + x_2 \cdot w_2 + \text{bias})
-\]
-
+```
 - Inference is hardcoded as an instruction program
 - Inputs, weights, bias, and output are stored in data memory
 - Step activation function is implemented in hardware using the ALU
