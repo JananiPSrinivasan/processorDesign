@@ -1,0 +1,20 @@
+# Python virtual environments
+.venv/
+
+# Compiled Python files
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+
+# Verilog simulation outputs
+*.vcd
+*.vvp
+
+# Hex/memory/debug outputs
+*.hex
+*.json
+
+# IDE folders
+.vscode/

@@ -12,8 +12,12 @@ module data_memory(
     input wire [7:0] write_data, //write data
     output wire [7:0] read_data 
 );
+    
     //16 x 8bit memory
     reg [7:0] mem [0:15];
+
+    //Load contents from the file
+    initial $readmemh("F:/processor_design/simple_processor/perceptron_model/data.hex", mem);
 
     // Asynchronous read
     assign read_data = mem[addr];

@@ -30,10 +30,10 @@ module top_tb;
 
         // Run for 200 ns (20 cycles)
         #200;
-
+        
         $display("Final Output (Classification): %d", mem_read_data);
         $finish;
     end
-
+    $display("Memory[13] = %d", uut.dp.mem.mem[13]);
 
 endmodule
