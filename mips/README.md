@@ -1,155 +1,130 @@
-# MIPS Processor for MNIST Classification with On-Chip ML Accelerator
+# RISC-V SoC for MNIST Classification using Feedforward Neural Network
 
-A hardware-software co-design project to implement a pipelined MIPS processor with an on-chip neural network accelerator for real-time MNIST classification using ReLU-based FFNN. Built using SystemVerilog and Cadence tools.
+This project involves designing a System-on-Chip (SoC) with a flexible RISC-V processor, an on-chip neural network accelerator, DMA engines, and bootloader logic for deploying a quantized MNIST model. The system supports weight loading from SPI flash and real-time inference on FPGA or ASIC platforms.
 
 ---
 
-## PHASE 1: ML Model Development & Quantization
+## Phase 1: ML Model Development and Quantization
 
-### Download & Preprocess the Dataset
+### Dataset Preparation
 - Dataset: MNIST (28×28 grayscale images)
 - Normalize pixel values to [0, 1]
-- Split into training and testing sets
+- Split into training and test sets
 
-### Design Feed-Forward Neural Network (FFNN)
-- Architecture: Input (784) → Hidden Layer (128) → Output (10)
-- Activations:
-  - Hidden Layers: ReLU
-  - Output Layer: Softmax
+### Neural Network Design
+- Architecture: Input (784) → Hidden (e.g., 128) → Output (10)
+- Activation Functions:
+  - Hidden: ReLU
+  - Output: Softmax
 
-### Train the Model
-- Framework: TensorFlow or PyTorch
-- Goal: ~98% test accuracy
+### Training and Quantization
+- Framework: PyTorch or TensorFlow
+- Target accuracy: ~98% before quantization
+- Quantize weights and activations to 8-bit fixed-point (INT8)
+- Post-quantization accuracy goal: ≥ 95%
+- Export weights in `.hex` or `.mif` format for hardware
 
-### Quantization
-- Convert weights and activations to 8-bit fixed-point (INT8)
-- Accuracy goal post-quantization: ≥ 95%
-- Export model weights as `.txt` or `.hex` for hardware
-
-### Fixed-Point Design Planning
-- Choose fixed-point format (e.g., Q4.4 or Q2.6)
-- Generate lookup tables or MAC arrays for efficient implementation
-
----
-
-## PHASE 2: Hardware Design – Pipelined MIPS + ML Accelerator
-
-### 2.1 Top-Level System Architecture
-
-#### Components
-- MIPS Core: 5-stage pipeline (IF → ID → EX → MEM → WB)
-- Memory System:
-  - DDR/LPDDR main memory
-  - Simple cache (direct-mapped or 2-way set associative)
-  - On-Chip SRAM Buffers:
-    - Buffers for input images, weights, and activations
-    - Dual-port SRAM macros or FPGA-inferred blocks
-    - Mapped to Wishbone interface
-
-#### Communication
-- Wishbone Bus: Interconnect between CPU, DMA, ML accelerator, memory
-- PCIe: Interface for external peripherals (e.g., camera)
-
-#### I/O
-- Camera Input: Via PCIe or AXI-to-Wishbone bridge
-- Monitor/LED Output: Display predicted digit (0–9)
+### Fixed-Point Design
+- Choose format (e.g., Q4.4, Q2.6)
+- Apply saturation and rounding
+- Generate MAC-friendly weight layout
 
 ---
 
-### 2.2 ML Accelerator Module
-- Inputs: 784 INT8 values (flattened image)
-- Operations: Matrix multiply + ReLU + classifier
-- Output: Predicted class index (0–9)
+## Phase 2: SoC Architecture and Memory Design
+
+### Processor Core
+- RISC-V pipelined processor (5-stage: IF → ID → EX → MEM → WB)
+- Support for custom instructions (optional)
+- Written in SystemVerilog
+
+### Memory Subsystem
+- DDR/LPDDR for program/data storage
+- Simple cache (direct-mapped or 2-way set associative)
+- On-Chip SRAM Buffers:
+  - Store input images, model weights, and intermediate activations
+  - Implemented using dual-port RAMs
+
+### Bootloader and SPI Flash
+- Store `.hex` weights in SPI NOR flash (e.g., Micron N25Q032)
+- On reset, bootloader loads weights into SRAM
+- SPI controller and FSM in SystemVerilog
+- Flash is programmed via FTDI FT2232H (USB to SPI)
+
+### DMA Engines
+- Automatically transfer data between DDR and SRAM
+- Load model weights from flash or DDR into SRAM
+- Stream image data to accelerator without CPU intervention
+
+### I/O Interfaces
+- Camera input via PCIe or AXI bridge
+- Output results to 7-segment display, LED, or HDMI monitor
 
 ---
 
-### 2.3 On-Chip SRAM Buffers
-- Purpose: Minimize latency by storing data locally
-- Use Cases:
-  - Camera image buffering (28×28 bytes)
-  - Local weight storage for hidden/output layers
-  - Intermediate activation buffers
+## Phase 3: Hardware Implementation using SystemVerilog
+
+### Core Modules
+- RISC-V Core: ALU, Register File, Control, Hazard Unit, Forwarding Unit
+- ML Accelerator: Matrix-vector multiply + ReLU + classification logic
+- SRAM and DMA controllers
+- SPI flash controller
+- Bootloader FSM
+
+### Interconnect
+- Wishbone or AXI bus for internal communication
+
+### Simulation and Debugging
+- Simulate using Cadence Xcelium
+- Debug with waveform viewers and assertions
 
 ---
 
-### 2.4 DMA Engines
-- Purpose: Automatic data transfer between DDR/LPDDR and SRAM
-- Usage:
-  - Boot-time weight loading
-  - Streaming camera input into SRAM
-  - Storing result to output port
-- Controlled via CPU-configured registers or interrupts
+## Phase 4: Synthesis and Physical Design
 
----
+### RTL Synthesis
+- Use Cadence Genus for synthesis
+- Perform:
+  - Timing analysis
+  - Area and power estimation
+  - Clock gating and logic optimization
 
-## PHASE 3: SystemVerilog Implementation (Cadence Tools)
-
-### MIPS Core
-- Modules:
-  - ALU
-  - Register File
-  - Control Unit
-  - Hazard Detection
-  - Forwarding Unit
-
-### ML Accelerator
-- RTL for:
-  - Matrix-vector multiply
-  - ReLU logic
-  - Classification logic
-- Memory-mapped weight/activation buffers (SRAM interface)
-
-### Memory & I/O Infrastructure
-- Wishbone bus interconnect
-- PCIe peripheral interface for camera input
-- DDR/LPDDR controller + simple cache
-- DMA controller
-- On-chip dual-port SRAM wrappers
-
----
-
-## PHASE 4: Simulation, Synthesis, and Verification
-
-### Functional Verification
-- Simulate using Cadence Xcelium or QuestaSim
-- Testbench with dummy MNIST image vectors
-- Verify correctness of accelerator and DMA flows
-
-### Synthesis
-- Use Cadence Genus
-- Perform timing analysis, logic optimization
-- Analyze:
-  - Area
-  - Power
-  - Performance
-
-### Physical Design (Optional)
-- Use Cadence Innovus
-- Floorplanning and place-and-route
+### Physical Implementation (Optional)
+- Use Cadence Innovus for P&R
+- Floorplanning, CTS, routing
 - Generate GDSII for ASIC tape-out
 
 ---
 
-## PHASE 5: Deployment (Optional)
+## Phase 5: Deployment and Testing
 
-- Target platform: FPGA or ASIC
-- Interface with real camera via PCIe/UART
-- Real-time prediction displayed via LED or HDMI monitor
-- Full system integration and throughput testing
+### FPGA Deployment
+- Flash SPI with model weights
+- Configure FPGA with synthesized design
+- Validate bootloading, inference, and output flow
+
+### Flexibility Features
+- Weights can be reprogrammed in flash for different models
+- RISC-V core allows runtime configuration and layer control
+- Architecture supports model updates without fabric reconfiguration
+
+---
+
+## Summary of Features
+
+| Feature                  | Description                                           |
+|--------------------------|-------------------------------------------------------|
+| Core                     | Pipelined RISC-V processor (SystemVerilog)           |
+| Neural Network           | Quantized FFNN for MNIST inference                   |
+| Accelerator              | Matrix-vector multiply with ReLU and classifier      |
+| Memory                   | DDR, simple cache, on-chip dual-port SRAM            |
+| DMA                      | High-speed transfers between memory and accelerator  |
+| Bootloader               | SPI flash boot logic for weight loading              |
+| I/O                      | Camera input, LED/monitor output                     |
+| Interconnect             | Wishbone or AXI                                       |
+| Development Tools        | SystemVerilog, Cadence Xcelium, Genus, Innovus       |
+| Deployment               | FPGA or ASIC                                          |
 
 ---
 
-## Summary of Key Features
 
-| Component           | Description                                        |
-|--------------------|----------------------------------------------------|
-| MIPS Core          | 5-stage pipelined processor                        |
-| ML Accelerator     | FFNN-based INT8 inference engine                   |
-| On-Chip SRAM       | Dual-port buffers for fast data access             |
-| DMA Engines        | Memory-to-memory transfers without CPU             |
-| Memory             | DDR/LPDDR with simple cache                        |
-| Communication      | Wishbone (on-chip), PCIe (peripheral)              |
-| I/O Devices        | Camera (input), LED/Monitor (output)               |
-| Tools Used         | SystemVerilog, Cadence Genus/Xcelium/Innovus       |
-
----
