@@ -1,4 +1,3 @@
-
 ## Overall Project Flow
 
 This project demonstrates the complete flow from **training a machine learning model** to **running inference in a custom-built 8-bit Verilog processor**. The workflow is divided into four main stages:
@@ -91,28 +90,29 @@ This is a **proof-of-concept** designed for educational and simulation purposes 
 
 ---
 
-### Project Limitations
+## Why the Output May Be Inaccurate
 
-| Area | Limitation |
-|------|------------|
-| Instruction Flow | No support for loops, branches, conditionals (e.g., `JMP`, `BEQ`) |
-| Program Flexibility | Instructions are hardcoded in Verilog (`case` block) — not loaded dynamically |
-| Arithmetic Precision | Only 8-bit integer math, no Q-format, fixed-point, or overflow detection |
-| Pipeline | No instruction pipelining — one operation at a time (not cycle-efficient) |
-| Scalability | Cannot handle larger models, deeper layers, or vectorized operations |
-| Data Movement | No memory-mapped IO, UART, external input support |
-| Verilog Limitations | No modular typing (`struct`, `enum`), no assertions or formal checks |
-| Interactivity | Outputs are stored into a memory location but not exposed dynamically |
+This project successfully demonstrates a working inference flow for a trained perceptron model. However, the output may appear "incorrect" or unreliable due to several known and expected limitations:
+
+### Summary of Limitations Affecting Output
+
+| Limitation | Impact |
+|------------|--------|
+| **Single-layer Perceptron** | Can only learn linearly separable problems. If the selected features do not allow a clear linear boundary, the model will misclassify. |
+| **Feature Choice** | This demo uses only sepal length and width. These are not the most discriminative features in the Iris dataset — petal features work better. |
+| **No Scaling / Precision Loss** | Weights and inputs are scaled with `scale = 1`, so decimal values are truncated. This leads to loss of important learned patterns. |
+| **Step Activation** | Uses a hard `step()` function, which flips output between 0 and 1 with no smooth transition. Minor numeric shifts can change the output. |
+| **No Label Comparison** | The simulation does not compare the output with the actual label of the test input, so correctness cannot be evaluated directly. |
 
 ---
-### Why This Is a Demonstration-Only Project
 
-This project is **not designed for real-time ML inference** or deployment in hardware. It serves as a learning tool to understand:
+### Why This Is Still Valid
 
-- How processors work at the RTL level
-- How ML computations can be broken down into hardware operations
-- How to pass trained model parameters into hardware using hex memory files
-- How to simulate dataflow using a finite instruction set
+This project is not intended to be a high-accuracy classifier, but rather to:
+
+- Demonstrate the **end-to-end integration** of ML and hardware
+- Show how ML models can be encoded into Verilog logic
+- Provide a **working template** for building more advanced ML-capable processors
 
 ---
 
