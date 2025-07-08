@@ -1,27 +1,29 @@
-# RISC-V SoC for MNIST Classification using Feedforward Neural Network
+# MIPS SoC for IRIS Classification using Feedforward Neural Network
 
-This project involves designing a System-on-Chip (SoC) with a flexible RISC-V processor, an on-chip neural network accelerator, DMA engines, and bootloader logic for deploying a quantized MNIST model. The system supports weight loading from SPI flash and real-time inference on FPGA or ASIC platforms.
+This project involves designing a System-on-Chip (SoC) with a flexible MIPS processor, an on-chip neural network accelerator, DMA engines, and bootloader logic for deploying a quantized IRIS dataset model. The system supports weight loading from SPI flash and real-time inference on FPGA or ASIC platforms.
+
+The project initially began with a simple Verilog prototype. Based on that experience, the architecture is now being rewritten in **SystemVerilog** to take advantage of enhanced modeling, debugging, and modular design.
 
 ---
 
 ## Phase 1: ML Model Development and Quantization
 
 ### Dataset Preparation
-- Dataset: MNIST (28×28 grayscale images)
-- Normalize pixel values to [0, 1]
+- Dataset: IRIS (150 samples, 4 features, 3 classes)
+- Normalize feature values to [0, 1]
 - Split into training and test sets
 
 ### Neural Network Design
-- Architecture: Input (784) → Hidden (e.g., 128) → Output (10)
+- Architecture: Input (4) → Hidden (e.g., 8 or 16) → Output (3)
 - Activation Functions:
   - Hidden: ReLU
   - Output: Softmax
 
 ### Training and Quantization
 - Framework: PyTorch or TensorFlow
-- Target accuracy: ~98% before quantization
+- Target accuracy: ≥ 95% before quantization
 - Quantize weights and activations to 8-bit fixed-point (INT8)
-- Post-quantization accuracy goal: ≥ 95%
+- Post-quantization accuracy goal: ≥ 90%
 - Export weights in `.hex` or `.mif` format for hardware
 
 ### Fixed-Point Design
@@ -34,39 +36,39 @@ This project involves designing a System-on-Chip (SoC) with a flexible RISC-V pr
 ## Phase 2: SoC Architecture and Memory Design
 
 ### Processor Core
-- RISC-V pipelined processor (5-stage: IF → ID → EX → MEM → WB)
-- Support for custom instructions (optional)
-- Written in SystemVerilog
+- **MIPS pipelined processor** (5-stage: IF → ID → EX → MEM → WB)
+- Written in **SystemVerilog**
+- Supports optional custom instructions
 
 ### Memory Subsystem
 - DDR/LPDDR for program/data storage
 - Simple cache (direct-mapped or 2-way set associative)
 - On-Chip SRAM Buffers:
-  - Store input images, model weights, and intermediate activations
+  - Store input features, model weights, and intermediate activations
   - Implemented using dual-port RAMs
 
 ### Bootloader and SPI Flash
 - Store `.hex` weights in SPI NOR flash (e.g., Micron N25Q032)
 - On reset, bootloader loads weights into SRAM
-- SPI controller and FSM in SystemVerilog
+- SPI controller and FSM written in **SystemVerilog**
 - Flash is programmed via FTDI FT2232H (USB to SPI)
 
 ### DMA Engines
 - Automatically transfer data between DDR and SRAM
 - Load model weights from flash or DDR into SRAM
-- Stream image data to accelerator without CPU intervention
+- Stream feature vectors to accelerator without CPU intervention
 
 ### I/O Interfaces
-- Camera input via PCIe or AXI bridge
-- Output results to 7-segment display, LED, or HDMI monitor
+- Feature input via host interface (PCIe or UART)
+- Output class displayed via LED or debug UART
 
 ---
 
 ## Phase 3: Hardware Implementation using SystemVerilog
 
 ### Core Modules
-- RISC-V Core: ALU, Register File, Control, Hazard Unit, Forwarding Unit
-- ML Accelerator: Matrix-vector multiply + ReLU + classification logic
+- MIPS Core: ALU, Register File, Control, Hazard Unit, Forwarding Unit
+- ML Accelerator: Matrix-vector multiply + ReLU + classifier logic
 - SRAM and DMA controllers
 - SPI flash controller
 - Bootloader FSM
@@ -76,7 +78,7 @@ This project involves designing a System-on-Chip (SoC) with a flexible RISC-V pr
 
 ### Simulation and Debugging
 - Simulate using Cadence Xcelium
-- Debug with waveform viewers and assertions
+- Debug with waveform viewers, assertions, and transaction-level monitoring
 
 ---
 
@@ -90,7 +92,7 @@ This project involves designing a System-on-Chip (SoC) with a flexible RISC-V pr
   - Clock gating and logic optimization
 
 ### Physical Implementation (Optional)
-- Use Cadence Innovus for P&R
+- Use Cadence Innovus for place and route
 - Floorplanning, CTS, routing
 - Generate GDSII for ASIC tape-out
 
@@ -99,14 +101,14 @@ This project involves designing a System-on-Chip (SoC) with a flexible RISC-V pr
 ## Phase 5: Deployment and Testing
 
 ### FPGA Deployment
-- Flash SPI with model weights
+- Flash SPI with quantized model weights
 - Configure FPGA with synthesized design
-- Validate bootloading, inference, and output flow
+- Validate bootloading, inference, and classification output
 
 ### Flexibility Features
-- Weights can be reprogrammed in flash for different models
-- RISC-V core allows runtime configuration and layer control
-- Architecture supports model updates without fabric reconfiguration
+- Model weights can be reprogrammed in flash
+- MIPS core allows dynamic configuration and layer-level control
+- Architecture supports software-driven reconfiguration
 
 ---
 
@@ -114,17 +116,50 @@ This project involves designing a System-on-Chip (SoC) with a flexible RISC-V pr
 
 | Feature                  | Description                                           |
 |--------------------------|-------------------------------------------------------|
-| Core                     | Pipelined RISC-V processor (SystemVerilog)           |
-| Neural Network           | Quantized FFNN for MNIST inference                   |
-| Accelerator              | Matrix-vector multiply with ReLU and classifier      |
-| Memory                   | DDR, simple cache, on-chip dual-port SRAM            |
-| DMA                      | High-speed transfers between memory and accelerator  |
-| Bootloader               | SPI flash boot logic for weight loading              |
-| I/O                      | Camera input, LED/monitor output                     |
+| Core                     | Pipelined MIPS processor (SystemVerilog)              |
+| Neural Network           | Quantized FFNN for IRIS classification                |
+| Accelerator              | Matrix-vector multiply with ReLU and classifier       |
+| Memory                   | DDR, simple cache, on-chip dual-port SRAM             |
+| DMA                      | High-speed transfers between memory and accelerator   |
+| Bootloader               | SPI flash boot logic for weight loading               |
+| I/O                      | Feature input via host, output via LED/UART           |
 | Interconnect             | Wishbone or AXI                                       |
-| Development Tools        | SystemVerilog, Cadence Xcelium, Genus, Innovus       |
+| Development Tools        | SystemVerilog, Cadence Xcelium, Genus, Innovus        |
 | Deployment               | FPGA or ASIC                                          |
 
 ---
 
+## SystemVerilog vs. Verilog
 
+This project started with a simple MIPS prototype written in **Verilog**. However, for SoC-scale complexity, **SystemVerilog is now used** because it provides:
+
+- Strong typing, interfaces, enumerated types, and `typedef`s
+- Support for assertions and constrained-random testing
+- Easier module hierarchy management and parameterization
+- Better support for testbenches, synthesis, and simulation
+
+The use of SystemVerilog significantly improves **debugging speed**, **readability**, and **scalability**.
+
+---
+
+## Why MIPS? Why Consider RISC-V?
+
+### Advantages of Using MIPS
+- Simple, well-documented 5-stage RISC pipeline
+- Academic support (used widely in teaching processor design)
+- Stable and predictable ISA for prototyping
+
+### Limitations of MIPS
+- Limited or outdated ecosystem
+- Not open-source in full (license restrictions may apply)
+- Less extensible/customizable than modern needs demand
+
+### Why Consider RISC-V in the Future
+- Fully open-source and extensible ISA
+- Modern toolchain and simulation support
+- Large ecosystem (SiFive, Andes, lowRISC, etc.)
+- Ideal for flexible, reconfigurable ML hardware systems
+
+**Future work** may explore replacing the MIPS core with a lightweight RISC-V processor to take advantage of custom instructions and open-source tools.
+
+---
