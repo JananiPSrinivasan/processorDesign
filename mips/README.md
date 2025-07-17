@@ -1,48 +1,32 @@
 # MIPS SoC for IRIS Classification using Feedforward Neural Network
 
-This project involves designing a System-on-Chip (SoC) with a flexible MIPS processor, an on-chip neural network accelerator, DMA engines, and bootloader logic for deploying a quantized IRIS dataset model. The system supports weight loading from SPI flash and real-time inference on FPGA or ASIC platforms.
+This project involves designing a System-on-Chip (SoC) with a simple pipelined MIPS processor, an on-chip neural network accelerator, and bootloader logic for deploying a quantized IRIS dataset model. The system supports weight loading from SPI flash and real-time inference on FPGA or ASIC platforms.
 
 The project initially began with a simple Verilog prototype. Based on that experience, the architecture is now being rewritten in **SystemVerilog** to take advantage of enhanced modeling, debugging, and modular design.
 
----
-
 ## Phase 1: ML Model Development and Quantization
 
-### Dataset Preparation
-- Dataset: IRIS (150 samples, 4 features, 3 classes)
-- Normalize feature values to [0, 1]
-- Split into training and test sets
 
 ### Neural Network Design
-- Architecture: Input (4) → Hidden (e.g., 8 or 16) → Output (3)
+- Architecture: Input (4) → Hidden (5) → Output (3)
 - Activation Functions:
   - Hidden: ReLU
   - Output: Softmax
 
 ### Training and Quantization
-- Framework: PyTorch or TensorFlow
-- Target accuracy: ≥ 95% before quantization
+- Framework: TensorFlow
 - Quantize weights and activations to 8-bit fixed-point (INT8)
-- Post-quantization accuracy goal: ≥ 90%
-- Export weights in `.hex` or `.mif` format for hardware
+- Export weights in `.hex`  format for hardware
 
-### Fixed-Point Design
-- Choose format (e.g., Q4.4, Q2.6)
-- Apply saturation and rounding
-- Generate MAC-friendly weight layout
-
----
 
 ## Phase 2: SoC Architecture and Memory Design
 
 ### Processor Core
 - **MIPS pipelined processor** (5-stage: IF → ID → EX → MEM → WB)
 - Written in **SystemVerilog**
-- Supports optional custom instructions
 
 ### Memory Subsystem
-- DDR/LPDDR for program/data storage
-- Simple cache (direct-mapped or 2-way set associative)
+- Simple cache (direct-mapped)
 - On-Chip SRAM Buffers:
   - Store input features, model weights, and intermediate activations
   - Implemented using dual-port RAMs
@@ -53,16 +37,9 @@ The project initially began with a simple Verilog prototype. Based on that exper
 - SPI controller and FSM written in **SystemVerilog**
 - Flash is programmed via FTDI FT2232H (USB to SPI)
 
-### DMA Engines
-- Automatically transfer data between DDR and SRAM
-- Load model weights from flash or DDR into SRAM
-- Stream feature vectors to accelerator without CPU intervention
-
 ### I/O Interfaces
-- Feature input via host interface (PCIe or UART)
-- Output class displayed via LED or debug UART
-
----
+- Feature input via host interface (PCIe)
+- Output class displayed via LED 
 
 ## Phase 3: Hardware Implementation using SystemVerilog
 
@@ -80,10 +57,6 @@ The project initially began with a simple Verilog prototype. Based on that exper
 - Simulate using Cadence Xcelium
 - Debug with waveform viewers, assertions, and transaction-level monitoring
 
----
-
-## Phase 4: Synthesis and Physical Design
-
 ### RTL Synthesis
 - Use Cadence Genus for synthesis
 - Perform:
@@ -91,43 +64,12 @@ The project initially began with a simple Verilog prototype. Based on that exper
   - Area and power estimation
   - Clock gating and logic optimization
 
-### Physical Implementation (Optional)
-- Use Cadence Innovus for place and route
-- Floorplanning, CTS, routing
-- Generate GDSII for ASIC tape-out
-
----
-
 ## Phase 5: Deployment and Testing
 
 ### FPGA Deployment
 - Flash SPI with quantized model weights
 - Configure FPGA with synthesized design
 - Validate bootloading, inference, and classification output
-
-### Flexibility Features
-- Model weights can be reprogrammed in flash
-- MIPS core allows dynamic configuration and layer-level control
-- Architecture supports software-driven reconfiguration
-
----
-
-## Summary of Features
-
-| Feature                  | Description                                           |
-|--------------------------|-------------------------------------------------------|
-| Core                     | Pipelined MIPS processor (SystemVerilog)              |
-| Neural Network           | Quantized FFNN for IRIS classification                |
-| Accelerator              | Matrix-vector multiply with ReLU and classifier       |
-| Memory                   | DDR, simple cache, on-chip dual-port SRAM             |
-| DMA                      | High-speed transfers between memory and accelerator   |
-| Bootloader               | SPI flash boot logic for weight loading               |
-| I/O                      | Feature input via host, output via LED/UART           |
-| Interconnect             | Wishbone or AXI                                       |
-| Development Tools        | SystemVerilog, Cadence Xcelium, Genus, Innovus        |
-| Deployment               | FPGA or ASIC                                          |
-
----
 
 ## SystemVerilog vs. Verilog
 
@@ -160,6 +102,5 @@ The use of SystemVerilog significantly improves **debugging speed**, **readabili
 - Large ecosystem (SiFive, Andes, lowRISC, etc.)
 - Ideal for flexible, reconfigurable ML hardware systems
 
-**Future work** may explore replacing the MIPS core with a lightweight RISC-V processor to take advantage of custom instructions and open-source tools.
 
 ---
